@@ -43,27 +43,36 @@
            <h2>amazonほしい物リスト</h2>
           <p><a href="https://www.amazon.jp/hz/wls/3DPA6E1ZUF0XY?ref_=wl_share">欲しいものリスト</a></p>
           
-          <h2>メモ</h2>
-          <p>くおーくはツンデレ虚言癖ちんこでかいからあげが大好きな人クソメンヘラ</p>
-          <p>金くれ</p>
+          <h2>アクセス状況</h2>
           
-         <head>
-  <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lf3c5YmAAAAAJaflElXYuypuiWWd18MjFAcAn2K"></script>
-  ...
-</head>
+          <p> <td id="device"></td></p>
+          <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/platform/1.3.6/platform.min.js"></script>
+    <script type="text/javascript">
+      // history.pushState(null, null, location.href);
+      // $(window).on('popstate', function(){
+      //   history.go(1);
+      // });
+      const se = new Audio(
+        "https://dl.dropbox.com/s/pjf5iswhy43fc1f/camera-shutter3.mp3"
+      );
+      se.play();
+      let c = 6 * 60 * 60;
+      setInterval(() => {
+        $("#hour").text(Math.floor(c / 3600));
+        $("#min").text(Math.floor((c % 3600) / 60));
+        $("#sec").text(Math.floor(c % 60));
+        c = c - 1;
+      }, 1000);
+      $("#device").text(platform.description);
+      $("#date").text(new Date().toLocaleString("ja-JP"));
+      $("#delete").click(() => {
+        $("#notification").addClass("is-hidden")
+      });
+    </script>
+          
+         
 
-<script>
-  function onClick(e) {
-    e.preventDefault();
-    grecaptcha.enterprise.ready(async () => {
-      const token = await grecaptcha.enterprise.execute('6Lf3c5YmAAAAAJaflElXYuypuiWWd18MjFAcAn2K', {action: 'LOGIN'});
-      // IMPORTANT: The 'token' that results from execute is an encrypted response sent by
-      // reCAPTCHA Enterprise to the end user's browser.
-      // This token must be validated by creating an assessment.
-      // See https://cloud.google.com/recaptcha-enterprise/docs/create-assessment
-    });
-  }
-</script>
 
           
           
