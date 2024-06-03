@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お天気アプリ</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #4caf50;
+            padding: 10px 20px;
+            text-align: right;
+            position: relative;
+        }
+        header h1 {
+            position: absolute;
+            left: 20px;
+            top: 10px;
+            color: #fff;
+            margin: 0;
+        }
+        header input[type="text"] {
+            padding: 5px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        header button {
+            padding: 5px 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff9800;
+            color: #fff;
+            cursor: pointer;
+        }
+        header button:hover {
+            background-color: #e68a00;
+        }
+        .info {
+            text-align: left;
+            padding: 10px 20px;
+        }
+        .weather-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .weather-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            text-align: center;
+        }
+        .weather-card h2 {
+            margin-top: 0;
+            color: #4caf50;
+        }
+        .weather-card h3 {
+            margin: 10px 0;
+            color: #555;
+        }
+        .weather-card p {
+            margin: 5px 0;
+        }
+        footer {
+            background-color: #4caf50;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>お天気アプリ！</h1>
+        <input type="text" id="cityInput" placeholder="都市名を入力">
+        <button onclick="searchWeather()">検索</button>
+    </header>
+    <div id="weather-container" class="weather-container"></div>
+    <div class="info" id="location"></div>
+    <div class="info" id="date"></div>
+    <footer id="footer"></footer>
+
+    <script>
+        const apiKey = '1605479de3f00043811b152538fd264f'; // ここにあなたのAPIキーを入力してください
+
+        window.onload = function() {
+            // 位置情報を取得する
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // 現在の都市を取得するためのURL
+                const locationUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=ja&units=metric`;
+
+                fetch(locationUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        const city = data.name; // 現在の都市名を取得
+                        document.getElementById('location').innerText = `位置: ${city}`;
+
+                        const date = new Date(); // 現在の日付を取得
+                        const formattedDate = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                        document.getElementById('date').innerText = `日付: ${formattedDate}`;
+
+                        // 今日から3日後までの天気を取得するためのURL
+                        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&lang=ja&units=metric`;
+
+                        fetch(forecastUrl)
+                            .then(response => response.json())
+                            .then(data => {
+                                // 各日の最低気温と最高気温を求める
+                                const dailyTemperatures = {};
+
+                                data.list.forEach(item => {
+                                    const date = new Date(item.dt * 1000);
+                                    const day = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                                    if (!dailyTemperatures[day]) {
+                                        dailyTemperatures[day] = {
+                                            minTemp: item.main.temp_min,
+                                            maxTemp: item.main.temp_max,
+                                            description: item.weather[0].description,
+                                            icon: item.weather[0].icon
+                                        };
+                                    } else {
+                                        dailyTemperatures[day].minTemp = Math.min(dailyTemperatures[day].minTemp, item.main.temp_min);
+                                        dailyTemperatures[day].maxTemp = Math.max(dailyTemperatures[day].maxTemp, item.main.temp_max);
+                                    }
+                                });
+
+                                // 天気情報を表示
+                                for (const [day, temps] of Object.entries(dailyTemperatures)) {
+                                    const weatherCard = document.createElement('div');
+                                    weatherCard.classList.add('weather-card');
+                                    weatherCard.innerHTML = `
+                                        <h2>${city}</h2>
+                                        <h3>${day}</h3>
+                                        <img src="https://openweathermap.org/img/wn/${temps.icon}.png" alt="${temps.description}">
+                                        <p>${temps.description}</p>
+                                        <p>最低気温: ${Math.round(temps.minTemp)}°C</p>
+                                        <p>最高気温: ${Math.round(temps.maxTemp)}°C</p>
+                                    `;
+                                    document.getElementById('weather-container').appendChild(weatherCard);
+                                }
+                            })
+                            .catch(error => console.log('お天気情報の取得中にエラーが発生しました:', error));
+                    })
+                    .catch(error => console.log('位置情報の取得中にエラーが発生しました:', error));
+            });
+
+            // リアルタイムの日本時間をフッターに表示する
+            function updateClock() {
+                const now = new Date();
+                const options = {
+                    timeZone: 'Asia/Tokyo',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                const timeString = now.toLocaleTimeString('ja-JP', options);
+                document.getElementById('footer').innerText = `現在の日本時間: ${timeString}`;
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+        };
+
+        function searchWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (city === '') {
+                alert('都市名を入力してください');
+                return;
+            }
+
+            // 指定された都市の天気を取得するURL
+            const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&lang=ja&units=metric`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const cityName = data.name; // 都市名を取得
+                    document.getElementById('location').innerText = `都市名: ${cityName}`;
+
+                    const date = new Date(); // 現在の日付を取得
+                    const formattedDate = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                    document.getElementById('date').innerText = `日付: ${formattedDate}`;
+
+                    // 今日から3日後までの天気を取得するためのURL
+                    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&lang=ja&units=metric`;
+
+                    fetch(forecastUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            // 各日の最低気温と最高気温を求める
+                            const dailyTemperatures = {};
+
+                            data.list.forEach(item => {
+                                const date = new Date(item.dt * 1000);
+                                const day = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                                if (!dailyTemperatures[day]) {
+                                    dailyTemperatures[day] = {
+                                        minTemp: item.main.temp_min,
+                                        maxTemp: item.main.temp_max,
+                                        description: item.weather[0].description,
+                                        icon: item.weather[0].icon
+                                    };
+                                } else {
+                                    dailyTemperatures[day].minTemp = Math.min(dailyTemperatures[day].minTemp, item.main.temp_min);
+                                    dailyTemperatures[day].maxTemp = Math.max(dailyTemperatures[day].maxTemp, item.main.temp_max);
+                                }
+                            });
+
+                            // 天気情報を表示
+                            const weatherContainer = document.getElementById('weather-container');
+                            weatherContainer.innerHTML = ''; // 以前の検索結果をクリア
+                            for (const [day, temps] of Object.entries(dailyTemperatures)) {
+                                const weatherCard = document.createElement('div');
+                                weatherCard.classList.add('weather-card');
+                                weatherCard.innerHTML = `
+                                    <h2>${cityName}</h2>
+                                    <h3>${day}</h3>
+                                    <img src="https://openweathermap.org/img/wn/${temps.icon}.png" alt="${temps.description}">
+                                    <p>${temps.description}</p>
+                                    <p>最低気温: ${Math.round(temps.minTemp)}°C</p>
+                                    <p>最高気温: ${Math.round(temps.maxTemp)}°C</p>
+                                `;
+                                weatherContainer.appendChild(weatherCard);
+                            }
+                        })
+                        .catch(error => console.log('お天気情報の取得中にエラーが発生しました:', error));
+                })
+                .catch(error => console.log('お天気情報の取得中にエラーが発生しました:', error));
+        }
+    </script>
+</body>
+</html>
